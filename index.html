@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#090d16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>FocusPrep — ЕГЭ Трекер</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <!-- Игровое всплывающее уведомление о новой ачивке -->
+  <div id="achievementToast" class="ach-toast hidden">
+    <div class="ach-toast-icon" id="toastIcon">🏆</div>
+    <div class="ach-toast-body">
+      <div class="ach-toast-tag" id="toastRarity">НОВОЕ ДОСТИЖЕНИЕ</div>
+      <div class="ach-toast-title" id="toastTitle">Название ачивки</div>
+      <div class="ach-toast-xp" id="toastXp">+150 XP</div>
+    </div>
+  </div>
+
+  <div class="app-container">
+    <!-- Шапка -->
+    <header class="top-bar">
+      <div class="brand" onclick="goHome()">
+        <span class="brand-dot"></span>Focus<span>Prep</span>
+      </div>
+      <div class="top-actions">
+        <div class="lvl-pill" id="topLvlBadge">LVL 1</div>
+        <button id="resetDataBtn" class="icon-btn" title="Обновить базу тем">↻</button>
+        <div class="streak-pill" id="topStreakBadge">🔥 0 дн.</div>
+      </div>
+    </header>
+
+    <!-- ГЛАВНЫЙ ЭКРАН 1: СТРИКИ И КАРТОЧКИ ПРЕДМЕТОВ -->
+    <main id="view-home" class="view active">
+      <section class="hero-card">
+        <div class="hero-top">
+          <div>
+            <div class="hero-subtitle">Ударный режим</div>
+            <div class="hero-streak"><span id="heroStreakCount">0</span> дней подряд 🔥</div>
+          </div>
+          <div class="hero-ring-box">
+            <span id="overallPercent">0%</span>
+            <small>всего</small>
+          </div>
+        </div>
+
+        <div class="week-strip" id="weekStrip"></div>
+
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="overallProgressBar" style="width: 0%"></div>
+        </div>
+      </section>
+
+      <div id="dueReviewsBanner" class="review-alert hidden"></div>
+
+      <div class="section-row">
+        <h2 class="section-heading">Предметы ЕГЭ</h2>
+        <span class="muted-hint">Выбери предмет</span>
+      </div>
+
+      <div id="subjectsGrid" class="subjects-grid"></div>
+    </main>
+
+    <!-- ЭКРАН ПРЕДМЕТА -->
+    <main id="view-subject-detail" class="view">
+      <div class="detail-nav-bar">
+        <button id="backToHomeBtn" class="btn-back">← Назад к предметам</button>
+        <button id="addTopicBtn" class="btn-glass-sm">+ Тема</button>
+      </div>
+
+      <div class="subject-banner-card" id="subjectDetailHeader">
+        <div class="sub-banner-top">
+          <div>
+            <span class="sub-banner-tag" id="subDetailBadge">ЕГЭ 2026</span>
+            <h2 id="subDetailTitle">Предмет</h2>
+          </div>
+          <div class="sub-banner-stat" id="subDetailStat">0 / 0</div>
+        </div>
+        <div class="progress-bar-bg mt-10">
+          <div class="progress-bar-fill" id="subDetailBar" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Поиск по темам предмета -->
+      <div class="mb-12">
+        <input type="search" id="topicSearchInput" class="glass-input" placeholder="🔍 Поиск по номеру задания или теме...">
+      </div>
+
+      <div id="topicsContainer" class="topics-list"></div>
+    </main>
+
+    <!-- ЭКРАН 2: ТРЕНАЖЁР СЛУЧАЙНЫХ ЗАДАНИЙ -->
+    <main id="view-practice" class="view">
+      <div class="practice-header-row mb-12">
+        <div>
+          <h2 class="section-heading" style="font-size:1.25rem;">Тренажёр ЕГЭ</h2>
+          <span class="muted-hint">Случайные задания по всем 500 темам</span>
+        </div>
+        <div class="combo-badge" id="practiceComboBadge">⚡ Комбо: 0</div>
+      </div>
+
+      <!-- Выбор предмета и темы для генерации -->
+      <div class="glass-card mb-12">
+        <div class="filter-grid">
+          <div>
+            <label class="field-label" for="practiceSubjectSelect">Предмет:</label>
+            <select id="practiceSubjectSelect" class="glass-input"></select>
+          </div>
+          <div>
+            <label class="field-label" for="practiceTopicSelect">Тема:</label>
+            <select id="practiceTopicSelect" class="glass-input"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Карточка случайного задания -->
+      <div class="practice-card mb-12" id="practiceCard">
+        <div class="practice-card-top">
+          <span class="topic-tag" id="pracSubBadge">Предмет</span>
+          <span class="prac-block-name" id="pracBlockBadge">Блок ЕГЭ</span>
+        </div>
+
+        <div class="prac-topic-label" id="pracTopicTitle">Название темы</div>
+        <p class="prac-question-text" id="pracQuestionText">Загрузка задания...</p>
+
+        <!-- Скрытая подсказка (теория по теме) -->
+        <div id="pracHintBox" class="prac-hint-box hidden">
+          <strong>💡 Подсказка по теме:</strong>
+          <p id="pracHintText"></p>
+        </div>
+
+        <div class="quiz-input-row mt-10">
+          <input type="text" id="pracAnswerInput" class="glass-input" placeholder="Введите ответ...">
+          <button type="button" id="pracCheckBtn" class="btn-gradient-sm">Ответить</button>
+        </div>
+
+        <div id="pracFeedback" class="quiz-feedback hidden"></div>
+
+        <div class="prac-actions-row mt-12">
+          <button type="button" id="pracToggleHintBtn" class="btn-glass-sm">💡 Подсказка</button>
+          <button type="button" id="pracNextBtn" class="btn-next-q">Следующее задание →</button>
+        </div>
+      </div>
+
+      <!-- Мини-счётчик текущей сессии тренажёра -->
+      <div class="glass-card">
+        <div class="mini-stats-row">
+          <div class="mini-stat">
+            <strong id="pracSessionSolved">0</strong>
+            <span>Решено верно</span>
+          </div>
+          <div class="mini-stat">
+            <strong id="pracBestCombo">0</strong>
+            <span>Макс. комбо</span>
+          </div>
+          <div class="mini-stat">
+            <strong id="pracPoolSize">0</strong>
+            <span>Задач в пуле</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ЭКРАН 3: ТАЙМЕР ФОКУСА И РУЧНОЙ УЧЁТ -->
+    <main id="view-timer" class="view">
+      <div class="section-title-block">
+        <h2>Таймер и учёт времени</h2>
+        <p>Запускай таймер или вноси время самостоятельных занятий</p>
+      </div>
+
+      <div class="glass-card mb-12">
+        <label class="field-label" for="activeSubject">Предмет:</label>
+        <select id="activeSubject" class="glass-input"></select>
+      </div>
+
+      <div class="mode-pills">
+        <button class="pill active" data-minutes="25" data-type="work">25м</button>
+        <button class="pill" data-minutes="45" data-type="work">45м</button>
+        <button class="pill" data-minutes="60" data-type="work">60м</button>
+        <button class="pill" data-minutes="5" data-type="break">Отдых 5м</button>
+      </div>
+
+      <div class="timer-circle-wrapper">
+        <svg class="progress-ring" width="210" height="210">
+          <circle class="progress-ring__bg" stroke-width="9" fill="transparent" r="92" cx="105" cy="105"/>
+          <circle class="progress-ring__circle" stroke-width="9" fill="transparent" r="92" cx="105" cy="105"/>
+        </svg>
+        <div class="timer-display">
+          <div id="timeText" class="time-text">25:00</div>
+          <div id="timerStatus" class="timer-status">Готов к старту</div>
+          <div class="time-adjust-row" id="timeAdjustRow">
+            <button type="button" class="adj-btn" id="minus5Btn">−5м</button>
+            <button type="button" class="adj-btn" id="customTimeBtn">✎ Своё</button>
+            <button type="button" class="adj-btn" id="plus5Btn">+5м</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="timer-controls mb-16">
+        <button id="startPauseBtn" class="btn-gradient">Запустить</button>
+        <button id="finishEarlyBtn" class="btn-accent hidden">Засчитать</button>
+        <button id="resetBtn" class="btn-glass">Сброс</button>
+      </div>
+
+      <div class="glass-card mb-12">
+        <div class="manual-header">
+          <span class="card-subtitle" style="margin:0;">✍️ Занимался без таймера?</span>
+          <div class="quick-min-chips">
+            <button type="button" class="chip-min" data-add="15">+15м</button>
+            <button type="button" class="chip-min" data-add="30">+30м</button>
+            <button type="button" class="chip-min" data-add="60">+1ч</button>
+          </div>
+        </div>
+        <div class="manual-row mt-10">
+          <input type="number" id="manualMinutesInput" class="glass-input" min="1" max="600" placeholder="Минуты (напр. 40)">
+          <button type="button" id="addManualTimeBtn" class="btn-gradient-sm">Добавить</button>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="manual-header">
+          <span class="card-subtitle" style="margin:0;">📅 Занятия сегодня</span>
+          <span class="today-total-badge" id="todayTotalBadge">0 мин</span>
+        </div>
+        <div id="todaySessionsList" class="sessions-log mt-10"></div>
+      </div>
+    </main>
+
+    <!-- ЭКРАН 4: АЧИВКИ, УРОВЕНЬ И СТАТИСТИКА -->
+    <main id="view-stats" class="view">
+      <section class="player-rank-card mb-16">
+        <div class="rank-top">
+          <div class="rank-badge-icon" id="playerRankIcon">🎓</div>
+          <div class="rank-info">
+            <div class="rank-lvl-label">Уровень <span id="playerLevel">1</span> · <span id="playerTitle">Новичок ЕГЭ</span></div>
+            <div class="rank-xp-text"><span id="playerXp">0</span> / <span id="playerNextXp">300</span> XP</div>
+          </div>
+          <div class="ach-counter-box">
+            <strong id="achUnlockedCount">0/14</strong>
+            <small>ачивок</small>
+          </div>
+        </div>
+        <div class="progress-bar-bg mt-10">
+          <div class="progress-bar-fill rank-xp-bar" id="playerXpBar" style="width: 0%"></div>
+        </div>
+      </section>
+
+      <div class="ach-filter-pills mb-12">
+        <button class="ach-filter active" data-filter="all">Все (14)</button>
+        <button class="ach-filter" data-filter="unlocked">Открытые</button>
+        <button class="ach-filter" data-filter="locked">В процессе</button>
+      </div>
+
+      <div id="achievementsList" class="ach-grid mb-16"></div>
+
+      <div class="glass-card mb-12">
+        <h3 class="card-subtitle">📊 Сводка подготовки</h3>
+        <div class="mini-stats-row">
+          <div class="mini-stat">
+            <strong id="statTopicsDone">0 / 500</strong>
+            <span>Тем освоено</span>
+          </div>
+          <div class="mini-stat">
+            <strong id="statQuizzesSolved">0</strong>
+            <span>Задач решено</span>
+          </div>
+          <div class="mini-stat">
+            <strong id="statTotalHours">0.0 ч</strong>
+            <span>В фокусе</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <h3 class="card-subtitle">Прогресс по предметам</h3>
+        <div id="subjectBreakdown" class="breakdown-list"></div>
+      </div>
+    </main>
+
+    <!-- Нижняя навигация (4 вкладки) -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-target="view-home">
+        <span class="nav-icon">🎯</span>
+        <span class="nav-label">Предметы</span>
+        <span id="navBadge" class="badge hidden">0</span>
+      </button>
+      <button class="nav-item" data-target="view-practice">
+        <span class="nav-icon">🎲</span>
+        <span class="nav-label">Тренажёр</span>
+      </button>
+      <button class="nav-item" data-target="view-timer">
+        <span class="nav-icon">⏱</span>
+        <span class="nav-label">Таймер</span>
+      </button>
+      <button class="nav-item" data-target="view-stats">
+        <span class="nav-icon">🏆</span>
+        <span class="nav-label">Ачивки</span>
+        <span id="achNavDot" class="nav-dot hidden"></span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Модальное окно карточки темы -->
+  <div id="topicModal" class="modal-overlay hidden">
+    <div class="modal-card topic-detail-card">
+      <div class="modal-header">
+        <span class="topic-tag" id="detailBlockTag">Блок ЕГЭ</span>
+        <button id="closeTopicModal" class="icon-btn">✕</button>
+      </div>
+      <h3 id="detailTitle" class="detail-title">Название темы</h3>
+
+      <div class="note-box">
+        <div class="box-label">💡 Ключевая памятка / формулы:</div>
+        <p id="detailNote"></p>
+      </div>
+
+      <div class="quiz-box" id="detailQuizBox">
+        <div class="box-label">⚡ Мини-проверка (+30 XP):</div>
+        <p id="detailQuestion" class="quiz-question"></p>
+        <div class="quiz-input-row">
+          <input type="text" id="quizAnswerInput" class="glass-input" placeholder="Ваш ответ...">
+          <button id="checkQuizBtn" class="btn-gradient-sm">Проверить</button>
+        </div>
+        <div id="quizFeedback" class="quiz-feedback hidden"></div>
+      </div>
+
+      <button id="modalToggleDoneBtn" class="btn-gradient full-width mt-12">Отметить тему изученной (+50 XP)</button>
+    </div>
+  </div>
+
+  <!-- Модалка добавления своей темы -->
+  <div id="addModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3>Добавить свою тему</h3>
+      <input type="text" id="newTopicTitle" class="glass-input" placeholder="Название темы...">
+      <input type="text" id="newTopicNote" class="glass-input" placeholder="Краткая шпаргалка или формула">
+      <div class="modal-actions">
+        <button id="cancelAddModal" class="btn-glass">Отмена</button>
+        <button id="confirmAddModal" class="btn-gradient">Добавить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="curriculum.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
